@@ -1,11 +1,13 @@
 //
-//  File.swift
+//  NetworkLayer.swift
 //
 //
 //  Created by Noah Giboney on 9/1/24.
 //
 
 import Foundation
+
+
 
 extension URLSession {
     
@@ -25,13 +27,7 @@ extension URLSession {
                 return .failure(NetworkError.serverResponse)
             }
             
-            /// decode data
-            do {
-                let result = try decoder.decode(T.self, from: data)
-                return .success(result)
-            } catch {
-                return .failure(.codingError)
-            }
+            return decodeData(data, with: decoder)
         } catch {
             return .failure(.error(error))
         }
@@ -68,13 +64,7 @@ extension URLSession {
                 return .failure(NetworkError.serverResponse)
             }
             
-            /// decode data
-            do {
-                let result = try decoder.decode(T.self, from: data)
-                return .success(result)
-            } catch {
-                return .failure(.codingError)
-            }
+            return decodeData(data, with: decoder)
         } catch {
             return .failure(.error(error))
         }
@@ -102,6 +92,19 @@ extension URLSession {
             return .success(data)
         } catch {
             return .failure(.error(error))
+        }
+    }
+}
+
+// MARK: - Helpers
+extension URLSession {
+    
+    private func decodeData<T:Codable>(_ data: Data, with decoder: JSONDecoder) -> Result<T, NetworkError> {
+        do {
+            let result = try decoder.decode(T.self, from: data)
+            return .success(result)
+        } catch {
+            return .failure(.codingError)
         }
     }
 }
