@@ -1,12 +1,12 @@
+//
+//  File.swift
+//
+//
+//  Created by Noah Giboney on 9/1/24.
+//
+
 import Foundation
 
-public enum NetworkError: Error {
-    case badUrl
-    case decodingError
-    case serverResponse
-}
-
-@available(iOS 13, *)
 extension URLSession {
     
     func fetch<T: Codable>(path: String,
