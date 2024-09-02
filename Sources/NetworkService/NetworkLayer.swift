@@ -7,11 +7,9 @@
 
 import Foundation
 
-
-
 extension URLSession {
     
-    func fetch<T: Codable>(path: String,
+    public func fetch<T: Codable>(path: String,
                            decoder: JSONDecoder = JSONDecoder()) async -> Result<T, NetworkError> {
         
         /// validate url
@@ -33,7 +31,7 @@ extension URLSession {
         }
     }
     
-    func post<T: Codable>(path: String,
+    public func post<T: Codable>(path: String,
                           object: T,
                           encoder: JSONEncoder = JSONEncoder(),
                           decoder: JSONDecoder = JSONDecoder()) async -> Result<T, NetworkError> {
@@ -70,7 +68,7 @@ extension URLSession {
         }
     }
     
-    func delete(path: String) async -> Result<Data?, NetworkError> {
+    public func delete(path: String) async -> Result<Data?, NetworkError> {
         
         /// validate url
         guard let url = URL(string: path) else {
