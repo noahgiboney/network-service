@@ -2,18 +2,14 @@
 Swift package for simplifiyng networking in any swift project. 
 
 ## Usage
+This NetworkLayer extension on <code>URLSession</code> provides an easy way to make network requests in Swift using async/await.
 
-# Fetching Data (GET Request)
-```
-let result: Result<User, NetworkError> = await URLSession.shared.fetch(path: "https://api.example.com/users/1")
+### Overview
+The methods provided by the NetworkService—fetch, post, and delete—each return a Result type and are generic to support any <code>Codable</code> type:
 
-switch result {
-case .success(let user):
-    print("User fetched successfully: \(user.name)")
-case .failure(let error):
-    print("Failed to fetch user: \(error.localizedDescription)")
-}
-```
+- fetch: async -> Result<T, NetworkError>
+- post: async -> Result<T, NetworkError>
+- delete: async -> Result<Data?, NetworkError>
 
 ## Install
 Swift Package Manager
