@@ -7,24 +7,31 @@
 
 import Foundation
 
-extension URLSession {
+public protocol NetworkSession {
+    func fetch<T: Codable>(path: String, decoder: JSONDecoder) async throws -> T
     
-    /// Performs a Get request from an API
+    func post<T: Codable>(path: String, object: T, encoder: JSONEncoder, decoder: JSONDecoder) async throws -> T
+    
+    func delete(path: String) async throws -> Data?
+}
+
+extension URLSession: NetworkSession {
+    
+    /// Performs a GET request from an API
     /// - Parameters:
     ///   - path: URL string to an API
     ///   - decoder: Optional JSON decoder for custom decoding
     /// - Returns: Codable Type
     public func fetch<T: Codable>(path: String,
-                           decoder: JSONDecoder = JSONDecoder()) async throws -> T {
+                                  decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        /// validate url
         guard let url = URL(string: path) else {
-            throw NetworkError.badUrl
+            throw NetworkError.invalidURL
         }
         
         let (data, response) = try await URLSession.shared.data(from: url)
         
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+        guard let http = (response as? HTTPURLResponse), http.statusCode == 200 else {
             throw NetworkError.serverResponse
         }
         
@@ -43,16 +50,14 @@ extension URLSession {
     ///   - decoder: Optional JSON decoder for custom decoding
     /// - Returns: Codable Type that was posted to API
     public func post<T: Codable>(path: String,
-                          object: T,
-                          encoder: JSONEncoder = JSONEncoder(),
-                          decoder: JSONDecoder = JSONDecoder()) async throws -> T {
+                                 object: T,
+                                 encoder: JSONEncoder = JSONEncoder(),
+                                 decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        /// validate url
         guard let url = URL(string: path) else {
-            throw NetworkError.badUrl
+            throw NetworkError.invalidURL
         }
         
-        /// setup request
         var request = URLRequest(url: url)
         request.httpMethod = HTTPMethod.post.method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -69,14 +74,18 @@ extension URLSession {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            /// check server response
-            guard let http = response as? HTTPURLResponse, http.statusCode == 201 else {
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 else {
                 throw NetworkError.serverResponse
             }
             
-            return try decoder.decode(T.self, from: data)
+            do {
+                return try decoder.decode(T.self, from: data)
+            } catch {
+                throw NetworkError.decodingError
+            }
+            
         } catch {
-            throw NetworkError.decodingError
+            throw error
         }
     }
     
@@ -85,18 +94,15 @@ extension URLSession {
     /// - Returns: Optional data depending on API response
     public func delete(path: String) async throws -> Data? {
         
-        /// validate url
         guard let url = URL(string: path) else {
-            throw NetworkError.badUrl
+            throw NetworkError.invalidURL
         }
         
-        /// configure request
         var request = URLRequest(url: url)
         request.httpMethod = HTTPMethod.delete.method
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        /// check server response
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw NetworkError.serverResponse
         }

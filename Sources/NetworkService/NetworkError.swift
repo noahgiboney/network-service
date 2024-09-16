@@ -7,19 +7,17 @@
 
 import Foundation
 
-public enum NetworkError: Error {
-    case badUrl
+public enum NetworkError: LocalizedError, Equatable {
+    case invalidURL
     case decodingError
     case encodingError
     case serverResponse
     case error(Error)
-}
-
-extension NetworkError: LocalizedError {
+    
     public var errorDescription: String? {
         switch self {
-        case .badUrl:
-            "The URl was invalid."
+        case .invalidURL:
+            "The endpoint provided was invalid."
         case .decodingError:
             "There was an error decoding the data."
         case .encodingError:
@@ -30,4 +28,20 @@ extension NetworkError: LocalizedError {
             error.localizedDescription
         }
     }
+    
+    public static func ==(lhs: NetworkError, rhs: NetworkError) -> Bool {
+            switch (lhs, rhs) {
+            case (.invalidURL, .invalidURL),
+                 (.decodingError, .decodingError),
+                 (.encodingError, .encodingError),
+                 (.serverResponse, .serverResponse):
+                return true
+            
+            case (.error(let lhsError), .error(let rhsError)):
+                return (lhsError as NSError) == (rhsError as NSError)
+                
+            default:
+                return false
+            }
+        }
 }

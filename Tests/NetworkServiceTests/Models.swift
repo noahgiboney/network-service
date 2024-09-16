@@ -6,3 +6,14 @@
 //
 
 import Foundation
+
+struct User: Codable, Identifiable, Equatable {
+    var id: Int
+    let name: String
+    let email: String
+}
+
+struct NonCodableUser: Identifiable {
+    var id: Int
+    var name: String
+}
