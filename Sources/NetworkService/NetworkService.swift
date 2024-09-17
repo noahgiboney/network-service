@@ -44,7 +44,7 @@ extension URLSession: NetworkSession {
                                  encoder: JSONEncoder = JSONEncoder(),
                                  decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        let response = try await makeRequest(httpMethod: .put, endpoint: path, model: object, encoder: encoder)
+        let response = try await makeRequest(httpMethod: .post, endpoint: path, model: object, encoder: encoder)
         return try decodeData(response, decoder: decoder)
     }
     
