@@ -12,8 +12,11 @@ public protocol NetworkSession {
     
     func post<T: Codable>(path: String, object: T, encoder: JSONEncoder, decoder: JSONDecoder) async throws -> T
     
-    func delete(path: String) async throws -> Data?
+    func delete(path: String) async throws -> Data
 }
+
+
+// MARK: - HTTP Methods
 
 extension URLSession: NetworkSession {
     
@@ -25,21 +28,8 @@ extension URLSession: NetworkSession {
     public func fetch<T: Codable>(path: String,
                                   decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        guard let url = URL(string: path) else {
-            throw NetworkError.invalidURL
-        }
-        
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let http = (response as? HTTPURLResponse), http.statusCode == 200 else {
-            throw NetworkError.serverResponse
-        }
-        
-        do {
-            return try decoder.decode(T.self, from: data)
-        } catch {
-            throw NetworkError.decodingError
-        }
+        let response = try await makeRequest(httpMethod: .get, endpoint: path, model: Optional<T>.none)
+        return try decodeData(response, decoder: decoder)
     }
     
     /// Performs a POST request to an API
@@ -54,60 +44,96 @@ extension URLSession: NetworkSession {
                                  encoder: JSONEncoder = JSONEncoder(),
                                  decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        guard let url = URL(string: path) else {
-            throw NetworkError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = HTTPMethod.post.method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        var data: Data
-        
-        do {
-            data = try encoder.encode(object)
-        } catch {
-            throw NetworkError.encodingError
-        }
-        
-        request.httpBody = data
-        
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 else {
-                throw NetworkError.serverResponse
-            }
-            
-            do {
-                return try decoder.decode(T.self, from: data)
-            } catch {
-                throw NetworkError.decodingError
-            }
-            
-        } catch {
-            throw error
-        }
+        let response = try await makeRequest(httpMethod: .put, endpoint: path, model: object, encoder: encoder)
+        return try decodeData(response, decoder: decoder)
     }
     
     /// Performs a DELETE request to an API
     /// - Parameter path: URL string to an API
     /// - Returns: Optional data depending on API response
-    public func delete(path: String) async throws -> Data? {
+    public func delete(path: String) async throws -> Data {
+        return try await makeRequest(httpMethod: .delete, endpoint: path, model: Optional<Data>.none)
+    }
+    
+    /// Performs a PUT request to an API
+    /// - Parameters:
+    ///   - path: URL string to an API
+    ///   - updatedObject: Codable object with update fields
+    ///   - encoder: Optional JSON encoder for custom encoding
+    ///   - decoder: Optional JSON decoder for custom decoding
+    /// - Returns: Codable Type that was posted to API
+    func update<T: Codable>(path: String,
+                            updatedObject: T,
+                            encoder: JSONEncoder = JSONEncoder(),
+                            decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        guard let url = URL(string: path) else {
+        let response = try await makeRequest(httpMethod: .put, endpoint: path, model: updatedObject, encoder: encoder)
+        return try decodeData(response, decoder: decoder)
+    }
+}
+
+// MARK: - Util
+
+extension URLSession {
+    
+    /// Makes a URLRequest for given httpMethod
+    /// - Parameters:
+    ///   - httpMethod: HTTPMethod to make
+    ///   - endpoint: URL string to an API
+    ///   - model: Optional codable object to make request with
+    ///   - encoder: Optional JSON encoder for custom encoding
+    /// - Returns: Data from URLRequest
+    private func makeRequest<T: Codable>(httpMethod: HTTPMethod,
+                             endpoint: String,
+                             model: T? = nil,
+                             encoder: JSONEncoder? = nil) async throws -> Data {
+        
+        /// validate endpoint
+        guard let url = URL(string: endpoint) else {
             throw NetworkError.invalidURL
         }
         
+        /// prepare request
         var request = URLRequest(url: url)
-        request.httpMethod = HTTPMethod.delete.method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpMethod = httpMethod.method
+        var requestBody: Data?
         
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw NetworkError.serverResponse
+        /// setup http body if needed
+        if let model = model, [.post, .put].contains(httpMethod) {
+            
+            guard let encoder = encoder else { throw NetworkError.badRequest }
+            
+            requestBody = try encodeData(model, encoder: encoder)
         }
         
+        request.httpBody = requestBody
+        
+        /// make request
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        /// validate server response
+        guard let httpResponse = (response as? HTTPURLResponse), httpMethod.responseCodes.contains(httpResponse.statusCode) else {
+            throw NetworkError.serverResponse
+        }
+
         return data
+    }
+    
+    private func decodeData<T: Codable>(_ data: Data, decoder: JSONDecoder) throws -> T {
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw NetworkError.decodingError
+        }
+    }
+    
+    private func encodeData<T: Codable>(_ model: T, encoder: JSONEncoder) throws -> Data {
+        do {
+            return try encoder.encode(model)
+        } catch {
+            throw NetworkError.decodingError
+        }
     }
 }
 

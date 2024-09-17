@@ -12,6 +12,7 @@ public enum NetworkError: LocalizedError, Equatable {
     case decodingError
     case encodingError
     case serverResponse
+    case badRequest
     case error(Error)
     
     public var errorDescription: String? {
@@ -24,6 +25,8 @@ public enum NetworkError: LocalizedError, Equatable {
             "There was an error encoding the data."
         case .serverResponse:
             "The server responded with an error."
+        case .badRequest:
+            "Bad Request. Please try again later"
         case .error(let error):
             error.localizedDescription
         }

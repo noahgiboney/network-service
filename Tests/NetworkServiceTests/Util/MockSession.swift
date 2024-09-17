@@ -9,6 +9,10 @@ import Foundation
 import NetworkService
 
 class MockSession: NetworkSession {
+    func delete(path: String) async throws -> Data {
+        Data()
+    }
+    
     
     var data: Data?
     var error: NetworkError?
