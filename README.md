@@ -5,7 +5,7 @@ Simple swift package for making easy network calls.
 Swift Package Manager
 
 ## Usage
-This service is an extension on <code>URLSession</code>, making it easy to make networks calls with async/await. There is automatic encdoing and decoding of the <code>Codable</code> type and error handling with a custom <code>NetworkError</code>
+This service is an extension on <code>URLSession</code>, making it easy to make networks calls with async/await. There is automatic encdoing and decoding of the <code>Codable</code> type and error handling with a custom <code>NetworkError</code>. You can pass function custom JSON Encoders and Decoders, or use the defaults.
 
 ### Import The Package
 ```
@@ -29,13 +29,21 @@ Use the post function to send a POST request with a Codable object to the API an
 let newUser = User(id: 1, "Noah"))
 let responsePost: Post = try await URLSession.shared.post(path: "https://api.example.com/users", object: newUser)
 ```
-### Delete Request
+### DELETE Request
 Use the delete function to send a DELETE request to the API. The function returns optional data depending on the API response for flexability.
 ```
 let responseData = try await URLSession.shared.delete(path: "https://api.example.com/user/1")
 if let data = responseData {
     print("Delete response: \(data)")
 }
+```
+
+### PUT Request
+Use the update function to send a PUT request to the API. This function replaces a Codable object with a new object.
+```
+user.name = "New Name"
+user.bio = "New Bio"
+let updatedUser: User = try await URLSession.shared.update(path: "https://api.example.com/users", updatedObject: user)
 ```
 
 ### Error Handling
