@@ -20,54 +20,52 @@ public protocol NetworkSession {
 
 extension URLSession: NetworkSession {
     
-    /// Performs a GET request from an API
-    /// - Parameters:
-    ///   - path: URL string to an API
-    ///   - decoder: Optional JSON decoder for custom decoding
-    /// - Returns: Codable Type
     public func fetch<T: Codable>(path: String,
                                   decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        let response = try await makeRequest(httpMethod: .get, endpoint: path, model: Optional<T>.none)
+        let resource = Resource(url: path, method: .get, decoder: decoder)
+        let response = try await makeRequest(for: resource)
         return try decodeData(response, decoder: decoder)
     }
     
-    /// Performs a POST request to an API
-    /// - Parameters:
-    ///   - path: URL string to an API
-    ///   - object: Codable object to POST to the API
-    ///   - encoder: Optional JSON encoder for custom encoding
-    ///   - decoder: Optional JSON decoder for custom decoding
-    /// - Returns: Codable Type that was posted to API
     public func post<T: Codable>(path: String,
                                  object: T,
                                  encoder: JSONEncoder = JSONEncoder(),
                                  decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         
-        let response = try await makeRequest(httpMethod: .post, endpoint: path, model: object, encoder: encoder)
+        let body = try encodeData(object, encoder: encoder)
+        let resource = Resource(url: path, method: .post, decoder: decoder, httpBody: body)
+        let response = try await makeRequest(for: resource)
         return try decodeData(response, decoder: decoder)
     }
     
-    /// Performs a DELETE request to an API
-    /// - Parameter path: URL string to an API
-    /// - Returns: Optional data depending on API response
     public func delete(path: String) async throws -> Data {
-        return try await makeRequest(httpMethod: .delete, endpoint: path, model: Optional<Data>.none)
+        let resource = Resource(url: path, method: .delete, decoder: JSONDecoder())
+        return try await makeRequest(for: resource)
     }
     
-    /// Performs a PUT request to an API
-    /// - Parameters:
-    ///   - path: URL string to an API
-    ///   - updatedObject: Codable object with update fields
-    ///   - encoder: Optional JSON encoder for custom encoding
-    ///   - decoder: Optional JSON decoder for custom decoding
-    /// - Returns: Codable Type that was posted to API
     func update<T: Codable>(path: String,
                             updatedObject: T,
                             encoder: JSONEncoder = JSONEncoder(),
                             decoder: JSONDecoder = JSONDecoder()) async throws -> T {
+
+        let body = try encodeData(updatedObject, encoder: encoder)
+        let resource = Resource(url: path, method: .put, decoder: decoder, httpBody: body)
+        let response = try await makeRequest(for: resource)
+        return try decodeData(response, decoder: decoder)
+    }
+    
+    func patch<T: Codable>(path: String, updatedFields: [String : Any], decoder: JSONDecoder = JSONDecoder()) async throws -> T {
+        var body: Data?
         
-        let response = try await makeRequest(httpMethod: .put, endpoint: path, model: updatedObject, encoder: encoder)
+        do {
+            body = try JSONSerialization.data(withJSONObject: updatedFields, options: [])
+        } catch {
+            throw NetworkError.badRequest
+        }
+        
+        let resource = Resource(url: path, method: .patch, decoder: decoder, httpBody: body)
+        let response = try await makeRequest(for: resource)
         return try decodeData(response, decoder: decoder)
     }
 }
@@ -76,44 +74,29 @@ extension URLSession: NetworkSession {
 
 extension URLSession {
     
-    /// Makes a URLRequest for given httpMethod
-    /// - Parameters:
-    ///   - httpMethod: HTTPMethod to make
-    ///   - endpoint: URL string to an API
-    ///   - model: Optional codable object to make request with
-    ///   - encoder: Optional JSON encoder for custom encoding
-    /// - Returns: Data from URLRequest
-    private func makeRequest<T: Codable>(httpMethod: HTTPMethod,
-                             endpoint: String,
-                             model: T? = nil,
-                             encoder: JSONEncoder? = nil) async throws -> Data {
-        
+
+    private func makeRequest(for resource: Resource) async throws -> Data {
+
         /// validate endpoint
-        guard let url = URL(string: endpoint) else {
+        guard let url = URL(string: resource.url) else {
             throw NetworkError.invalidURL
         }
         
         /// prepare request
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpMethod = httpMethod.method
-        var requestBody: Data?
+        request.httpMethod = resource.method.description
         
         /// setup http body if needed
-        if let model = model, [.post, .put].contains(httpMethod) {
-            
-            guard let encoder = encoder else { throw NetworkError.badRequest }
-            
-            requestBody = try encodeData(model, encoder: encoder)
+        if let httpBody = resource.httpBody {
+            request.httpBody = httpBody
         }
-        
-        request.httpBody = requestBody
-        
+
         /// make request
         let (data, response) = try await URLSession.shared.data(for: request)
         
         /// validate server response
-        guard let httpResponse = (response as? HTTPURLResponse), httpMethod.responseCodes.contains(httpResponse.statusCode) else {
+        guard let httpResponse = (response as? HTTPURLResponse), resource.method.responseCodes.contains(httpResponse.statusCode) else {
             throw NetworkError.serverResponse
         }
 

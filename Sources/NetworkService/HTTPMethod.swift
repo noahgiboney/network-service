@@ -10,7 +10,7 @@ import Foundation
 enum HTTPMethod {
     case get, post, delete, put, patch
     
-    var method: String {
+    var description: String {
         switch self {
         case .get:
             "GET"
