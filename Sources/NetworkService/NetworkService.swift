@@ -44,7 +44,7 @@ extension URLSession: NetworkSession {
         return try await makeRequest(for: resource)
     }
     
-    func update<T: Codable>(path: String,
+    public func update<T: Codable>(path: String,
                             updatedObject: T,
                             encoder: JSONEncoder = JSONEncoder(),
                             decoder: JSONDecoder = JSONDecoder()) async throws -> T {
@@ -55,7 +55,7 @@ extension URLSession: NetworkSession {
         return try decodeData(response, decoder: decoder)
     }
     
-    func patch<T: Codable>(path: String, updatedFields: [String : Any], decoder: JSONDecoder = JSONDecoder()) async throws -> T {
+    public func patch<T: Codable>(path: String, updatedFields: [String : Any], decoder: JSONDecoder = JSONDecoder()) async throws -> T {
         var body: Data?
         
         do {
