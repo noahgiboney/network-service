@@ -46,6 +46,13 @@ user.bio = "New Bio"
 let updatedUser: User = try await URLSession.shared.update(path: "https://api.example.com/users", updatedObject: user)
 ```
 
+### PATCH Request
+Use the patch function send patch request ot the API. This updates only specified fields, you must pass it a dictionary with these fields.
+```
+let updatedFields = ["name": "Noah", "bio": "New Bio"]
+let updatedUser: User = try await URLSession.shared.patch(patch: "https://api.example.com/users", fields: updatedFields)
+```
+
 ### Error Handling
 The service throws the following exceptions when an error occurs.
 ```

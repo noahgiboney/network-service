@@ -13,7 +13,7 @@ public enum NetworkError: LocalizedError, Equatable {
     case encodingError
     case serverResponse
     case badRequest
-    case error(Error)
+    case error(any Error)
     
     public var errorDescription: String? {
         switch self {
