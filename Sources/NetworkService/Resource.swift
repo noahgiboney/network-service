@@ -7,9 +7,11 @@
 
 import Foundation
 
-struct Resource {
-    let url: String
+/// Resource to create a URL Request with
+public struct Resource {
+    let endpoint: String
     let method: HTTPMethod
-    let decoder: JSONDecoder
-    var httpBody: Data?
+    var decoder: JSONDecoder = JSONDecoder()
+    var encoder: JSONEncoder = JSONEncoder()
+    var headers: [String:String]?
 }

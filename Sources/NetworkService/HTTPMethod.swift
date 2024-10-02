@@ -7,24 +7,13 @@
 
 import Foundation
 
-enum HTTPMethod {
-    case get, post, delete, put, patch
-    
-    var description: String {
-        switch self {
-        case .get:
-            "GET"
-        case .post:
-            "POST"
-        case .delete:
-            "DELETE"
-        case .put:
-            "PUT"
-        case .patch:
-            "PATCH"
-        }
-    }
-    
+enum HTTPMethod: String {
+    case get = "GET"
+    case post = "POST"
+    case delete = "DELETE"
+    case put = "PUT"
+    case patch = "PATCH"
+
     var responseCodes: [Int] {
         switch self {
         case .get:
