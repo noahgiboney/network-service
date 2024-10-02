@@ -30,12 +30,9 @@ let newUser = User(id: 1, "Noah"))
 let responsePost: Post = try await URLSession.shared.post(path: "https://api.example.com/users", object: newUser)
 ```
 ### DELETE Request
-Use the delete function to send a DELETE request to the API. The function returns optional data depending on the API response for flexability.
+Use the delete function to send a DELETE request to the API. The function just returns data for flexabilty with the API.
 ```
 let responseData = try await URLSession.shared.delete(path: "https://api.example.com/user/1")
-if let data = responseData {
-    print("Delete response: \(data)")
-}
 ```
 
 ### PUT Request
