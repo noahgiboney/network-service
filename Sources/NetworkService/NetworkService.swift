@@ -22,8 +22,8 @@ extension URLSession {
     /// Performs a GET request from an API
     /// - Parameter resource: Resource for the request
     /// - Returns: Codable Type fetched from API
-    public func fetch<T: Codable>(resource: Resource) async throws -> T {
-        let response = try await makeRequest(for: resource)
+    public func get<T: Codable>(resource: Resource) async throws -> T {
+        let response = try await makeRequest(for: resource, httpMethod: .get)
         return try decodeData(response, decoder: resource.decoder)
     }
     
@@ -34,7 +34,7 @@ extension URLSession {
     /// - Returns: Codable Type that was posted to API
     public func post<T: Codable>(resource: Resource, object: T) async throws -> T {
         let body = try encodeData(object, encoder: resource.encoder)
-        let response = try await makeRequest(for: resource, httpBody: body)
+        let response = try await makeRequest(for: resource, httpMethod: .post, httpBody: body)
         return try decodeData(response, decoder: resource.decoder)
     }
     
@@ -42,7 +42,7 @@ extension URLSession {
     /// - Parameter resource: Resource for the request
     /// - Returns: Optional data depending on API response
     public func delete(resource: Resource) async throws -> Data {
-        return try await makeRequest(for: resource)
+        return try await makeRequest(for: resource, httpMethod: .delete)
     }
     
     /// Performs a PUT request to an API
@@ -50,9 +50,9 @@ extension URLSession {
     ///   - resource: Resource for the request
     ///   - object: Codable object to POST to the API
     /// - Returns: Codable Type from API that was updated
-    public func update<T: Codable>(resource: Resource, object: T) async throws -> T {
+    public func put<T: Codable>(resource: Resource, object: T) async throws -> T {
         let body = try encodeData(object, encoder: resource.encoder)
-        let response = try await makeRequest(for: resource, httpBody: body)
+        let response = try await makeRequest(for: resource, httpMethod: .put, httpBody: body)
         return try decodeData(response, decoder: resource.decoder)
     }
     
@@ -69,7 +69,7 @@ extension URLSession {
         } catch {
             throw NetworkError.badRequest
         }
-        let response = try await makeRequest(for: resource, httpBody: body)
+        let response = try await makeRequest(for: resource, httpMethod: .patch, httpBody: body)
         return try decodeData(response, decoder: resource.decoder)
     }
 }
@@ -81,7 +81,7 @@ extension URLSession {
     /// Makes a URLRequest with the give resource
     /// - Parameter resource: Resource object with data needed to make request
     /// - Returns: Data from the request
-    private func makeRequest(for resource: Resource, httpBody: Data? = nil) async throws -> Data {
+    private func makeRequest(for resource: Resource, httpMethod: HTTPMethod,httpBody: Data? = nil) async throws -> Data {
         
         /// validate endpoint
         guard let endpoint = URL(string: resource.endpoint) else {
@@ -91,7 +91,7 @@ extension URLSession {
         /// prepare request
         var request = URLRequest(url: endpoint)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpMethod = resource.method.rawValue
+        request.httpMethod = httpMethod.rawValue
         
         /// setup http body if needed
         if let body = httpBody {
@@ -108,7 +108,7 @@ extension URLSession {
         let (data, response) = try await URLSession.shared.data(for: request)
         
         /// validate server response
-        guard let httpResponse = (response as? HTTPURLResponse), resource.method.responseCodes.contains(httpResponse.statusCode) else {
+        guard let httpResponse = (response as? HTTPURLResponse), httpMethod.responseCodes.contains(httpResponse.statusCode) else {
             throw NetworkError.serverResponse
         }
         
