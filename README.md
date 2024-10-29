@@ -5,49 +5,25 @@ Simple swift package for making easy network calls.
 Swift Package Manager
 
 ## Usage
-This service is an extension on <code>URLSession</code>, making it easy to make networks calls with async/await. There is automatic encdoing and decoding of the <code>Codable</code> type and error handling with a custom <code>NetworkError</code>. You can pass function custom JSON Encoders and Decoders, or use the defaults.
+This service is an extension on <code>URLSession</code>, making it easy to make networks calls with async/await. There is automatic encdoing and decoding of the <code>Codable</code> type and error handling with a custom <code>NetworkError</code>.
 
 ### Import The Package
 ```
 import NetworkService
 ```
 
-### GET Request
-Use the fetch function to make a GET request to an API and decode the response into a Codable object.
+### Create a Resource
+Create a Resource object to make a URL Request with. You must specify the endpoint, but can optionally pass a json encoder/decoder and/or a dictionary representing the request headers
 ```
-struct User: Codable {
-    let id: Int
-    let name: String
-}
+let headers = [Authorization : "Bearer "\(token)"]
 
-let user: User = try await URLSession.shared.fetch(path: "https://api.example.com/user/1")
+let resource = Resource(endpoint: "https://api.example.com", headers: headers)
 ```
 
-### POST Request
-Use the post function to send a POST request with a Codable object to the API and decode the response.
+### Perform a Request
+Easily perfrom a CRUD operation with one of the methods that is built as a extension to <code>URLSession</code>.
 ```
-let newUser = User(id: 1, "Noah"))
-let responsePost: Post = try await URLSession.shared.post(path: "https://api.example.com/users", object: newUser)
-```
-### DELETE Request
-Use the delete function to send a DELETE request to the API. The function just returns data for flexabilty with the API.
-```
-let responseData = try await URLSession.shared.delete(path: "https://api.example.com/user/1")
-```
-
-### PUT Request
-Use the update function to send a PUT request to the API. This function replaces a Codable object with a new object.
-```
-user.name = "New Name"
-user.bio = "New Bio"
-let updatedUser: User = try await URLSession.shared.update(path: "https://api.example.com/users", updatedObject: user)
-```
-
-### PATCH Request
-Use the patch function send patch request ot the API. This updates only specified fields, you must pass it a dictionary with these fields.
-```
-let updatedFields = ["name": "Noah", "bio": "New Bio"]
-let updatedUser: User = try await URLSession.shared.patch(patch: "https://api.example.com/users", fields: updatedFields)
+let users: [Users] = try await URLSession.shared.get(resource: resource)
 ```
 
 ### Error Handling
