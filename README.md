@@ -35,6 +35,7 @@ enum NetworkError: LocalizedError, Equatable {
     case encodingError
     case serverResponse
     case error(Error)
+}
 ```
 
 ## LICENSE
